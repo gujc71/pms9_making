@@ -28,9 +28,99 @@
     <script src="css/sb-admin/bootstrap.min.js"></script>
     <script src="css/sb-admin/metisMenu.min.js"></script>
     <script src="css/sb-admin/sb-admin-2.js"></script>
-	<script src="js/project9.js"></script>    
-<script>
-</script>    
+	<script src="js/project9.js"></script>
+	
+	<link rel="stylesheet" type="text/css" href="js/easyui/easyui.css">
+	<link rel="stylesheet" type="text/css" href="js/easyui/icon.css">
+	<link rel="stylesheet" type="text/css" href="js/easyui/demo.css">
+	<script type="text/javascript" src="js/easyui/jquery.easyui.min.js"></script>
+	    
+<script type="text/javascript">
+$(function() {
+    var dataSet = {"total":0,"rows":[]}
+
+    $('#tg').treegrid({
+        data: dataSet,
+        onDblClickCell : function(field, row) {
+            edit();
+        } 
+    });
+
+});
+function formatProgress(value){
+    if (value){
+        var s = '<div style="width:100%;border:1px solid #ccc">' +
+                '<div style="width:' + value + '%;background:#cc0000;color:#fff">' + value + '%' + '</div>'
+                '</div>';
+        return s;
+    } else {
+        return '';
+    }
+}
+var editingId;
+function edit(){
+    if (editingId != undefined){
+        $('#tg').treegrid('select', editingId);
+        return;
+    }
+    var row = $('#tg').treegrid('getSelected');
+    if (row){
+        editingId = row.tsno
+        $('#tg').treegrid('beginEdit', editingId);
+    }
+}
+function save(){
+    if (editingId != undefined){
+        var t = $('#tg');
+        t.treegrid('endEdit', editingId);
+        editingId = undefined;
+        var persons = 0;
+        var rows = t.treegrid('getChildren');
+        for(var i=0; i<rows.length; i++){
+            var p = parseInt(rows[i].persons);
+            if (!isNaN(p)){
+                persons += p;
+            }
+        }
+        var frow = t.treegrid('getFooterRows')[0];
+        frow.persons = persons;
+        t.treegrid('reloadFooter');
+    }
+}
+function cancel(){
+    if (editingId != undefined){
+        $('#tg').treegrid('cancelEdit', editingId);
+        editingId = undefined;
+    }
+}
+var idIndex = 100;
+function append(){
+    idIndex++;
+    var d1 = new Date();
+    var d2 = new Date();
+    d2.setMonth(d2.getMonth()+1);
+    var parentid = null;
+    var node = $('#tg').treegrid('getSelected');
+    if (node) parentid=node.tsno;
+    $('#tg').treegrid('append',{
+        parent: parentid,
+        data: [{
+            tsno: idIndex,
+            tstitle: 'New Task'+idIndex,
+            persons: parseInt(Math.random()*10),
+            tsstartdate: $.fn.datebox.defaults.formatter(d1),
+            tsenddate: $.fn.datebox.defaults.formatter(d2),
+            tsrate: parseInt(Math.random()*100)
+        }]
+    })
+}
+function removeIt(){
+    var node = $('#tg').treegrid('getSelected');
+    if (node){
+        $('#tg').treegrid('remove', node.tsno);
+    }
+}
+</script>   
 </head>
 
 <body>
@@ -62,6 +152,39 @@
                 <button class="btn btn-outline btn-primary" onclick="fn_moveToURL('projectForm?prno=<c:out value="${projectInfo.prno}"/>')" ><s:message code="common.btnUpdate"/></button>
             </div>
             <!-- /.row -->
+            <div class="row">
+			    <div style="margin:20px 0;">
+			        <a href="javascript:void(0)" class="easyui-linkbutton" onclick="edit()">Edit</a>
+			        <a href="javascript:void(0)" class="easyui-linkbutton" onclick="save()">Save</a>
+			        <a href="javascript:void(0)" class="easyui-linkbutton" onclick="cancel()">Cancel</a>
+			        <a href="javascript:void(0)" class="easyui-linkbutton" onclick="append()">append</a>
+			        <a href="javascript:void(0)" class="easyui-linkbutton" onclick="removeIt()">remove</a>
+			    </div>
+			    <table id="tg" class="easyui-treegrid" style="width:700px;height:250px"
+			            data-options="
+			                iconCls: 'icon-ok',
+			                rownumbers: true,
+			                animate: true,
+			                collapsible: true,
+			                fitColumns: true,
+			                method: 'get',
+			                idField: 'tsno',
+			                treeField: 'tstitle',
+			                showFooter: true
+			            ">
+			        <thead>
+			            <tr>
+			                <th data-options="field:'tstitle',width:180,editor:'text'">Task Name</th>
+			                <th data-options="field:'persons',width:60,align:'right',editor:'numberbox'">Persons</th>
+			                <th data-options="field:'tsstartdate',width:80,editor:'datebox'">Begin Date</th>
+			                <th data-options="field:'tsenddate',width:80,editor:'datebox'">End Date</th>
+			                <th data-options="field:'tsrate',width:120,formatter:formatProgress,editor:'numberbox'">Progress</th>
+			            </tr>
+			        </thead>
+			    </table>            
+            </div>
+            <!-- /.row -->
+            
         </div>
         <!-- /#page-wrapper -->
 
