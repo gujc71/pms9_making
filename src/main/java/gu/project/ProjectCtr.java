@@ -18,6 +18,9 @@ public class ProjectCtr {
 
     @Autowired
     private ProjectSvc projectSvc;
+
+    @Autowired
+    private TaskSvc taskSvc;
     
     @Autowired
     private EtcSvc etcSvc; 
@@ -34,7 +37,7 @@ public class ProjectCtr {
         
         Integer alertcount = etcSvc.selectAlertCount(userno);
         modelMap.addAttribute("alertcount", alertcount);
-    	
+        
         // CRUD 관련
         searchVO.pageCalculate( projectSvc.selectProjectCount(searchVO) ); // startRow, endRow
         List<?> listview  = projectSvc.selectProjectList(searchVO);
@@ -55,7 +58,7 @@ public class ProjectCtr {
         
         Integer alertcount = etcSvc.selectAlertCount(userno);
         modelMap.addAttribute("alertcount", alertcount);
-    	
+        
         // CRUD 관련
         if (projectInfo.getPrno() != null) {
             projectInfo = projectSvc.selectProjectOne(projectInfo);
@@ -72,8 +75,8 @@ public class ProjectCtr {
     @RequestMapping(value = "/projectSave")
     public String projectSave(HttpServletRequest request, ProjectVO projectInfo, ModelMap modelMap) {
         String userno = request.getSession().getAttribute("userno").toString();
-    	projectInfo.setUserno(userno);
-    	
+        projectInfo.setUserno(userno);
+        
         projectSvc.insertProject(projectInfo);
 
         return "redirect:/projectList";
@@ -89,12 +92,14 @@ public class ProjectCtr {
         
         Integer alertcount = etcSvc.selectAlertCount(userno);
         modelMap.addAttribute("alertcount", alertcount);
-    	
-        // CRUD 관련
         
         ProjectVO projectInfo = projectSvc.selectProjectOne(projectVO);
 
+        List<?> listview  = taskSvc.selectTaskList(projectVO.getPrno());
+        
+        
         modelMap.addAttribute("projectInfo", projectInfo);
+        modelMap.addAttribute("listview", listview);
         
         return "project/ProjectRead";
     }

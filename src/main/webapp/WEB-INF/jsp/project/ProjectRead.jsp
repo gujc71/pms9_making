@@ -34,15 +34,29 @@
 	<link rel="stylesheet" type="text/css" href="js/easyui/icon.css">
 	<link rel="stylesheet" type="text/css" href="js/easyui/demo.css">
 	<script type="text/javascript" src="js/easyui/jquery.easyui.min.js"></script>
+<link href="js/dynatree/ui.dynatree.css" rel="stylesheet"/>
+<script src="js/jquery-ui.js"></script>
+<script src="js/dynatree/jquery.dynatree.js"></script>
 	    
 <script type="text/javascript">
 $(function() {
-    var dataSet = {"total":0,"rows":[]}
-
-    $('#tg').treegrid({
+	var dataSet = {"total":<c:out value="${listview.size()}" />,"rows":[
+		<c:forEach var="listview" items="${listview}" varStatus="status">
+			{"id":'<c:out value="${listview.tsno}" />', "tsno":'<c:out value="${listview.tsno}" />'
+			,"tstitle":'<c:out value="${listview.tstitle}" />',"tsstartdate":"<c:out value="${listview.tsstartdate}" />"
+			,"tsenddate":"<c:out value="${listview.tsenddate}" />", "tsrate":"<c:out value="${listview.tsrate}" />"
+			,"userno": "<c:out value="${listview.userno}" />", "usernm": "<c:out value="${listview.usernm}" />"
+			<c:if test="${listview.tsparent!=null}">,"_parentId":"<c:out value="${listview.tsparent}" />"</c:if> } <c:if test="${!status.last}">,</c:if>
+		</c:forEach>
+    ]};
+    
+    $('#tg').treegrid({  
         data: dataSet,
         onDblClickCell : function(field, row) {
-            edit();
+			edit();
+			if (field==="usernm") { 
+				fn_searchUsers(row);
+			}
         } 
     });
 
@@ -70,22 +84,34 @@ function edit(){
     }
 }
 function save(){
-    if (editingId != undefined){
-        var t = $('#tg');
-        t.treegrid('endEdit', editingId);
-        editingId = undefined;
-        var persons = 0;
-        var rows = t.treegrid('getChildren');
-        for(var i=0; i<rows.length; i++){
-            var p = parseInt(rows[i].persons);
-            if (!isNaN(p)){
-                persons += p;
-            }
-        }
-        var frow = t.treegrid('getFooterRows')[0];
-        frow.persons = persons;
-        t.treegrid('reloadFooter');
-    }
+	if (editingId === undefined){return;}
+    var t = $('#tg');
+    t.treegrid('endEdit', editingId);
+    // 현재 선택된 행
+    var node = t.treegrid('getSelected');
+ 	t.treegrid('endEdit', editingId);
+    // 부모 노드 정보 추출
+ 	var parentId=null;
+ 	var parent = t.treegrid('getParent', node.tsno);
+ 	if (parent) {
+ 		parentId = parent.id;
+ 	}	
+ 	node.tsparent=parentId;
+ 	node.prno='<c:out value="${projectInfo.prno}" />';
+ 	// 데이터 전송
+ 	$.ajax({
+ 		url : "taskSave",
+ 		type: "post",
+ 		dataType: "json",
+ 		data: node
+ 	}).done(function(data){
+ 		$('#tg').treegrid('update', {
+ 			id : "N",
+			row : {id: data, tsno: data}
+ 		});		
+ 	});
+ 	
+ 	editingId = undefined;        
 }
 function cancel(){
     if (editingId != undefined){
@@ -105,20 +131,72 @@ function append(){
     $('#tg').treegrid('append',{
         parent: parentid,
         data: [{
-            tsno: idIndex,
+            id: 'N',
+            tsno: 'N',
             tstitle: 'New Task'+idIndex,
-            persons: parseInt(Math.random()*10),
+            usernm: "",
+            userno: "",
             tsstartdate: $.fn.datebox.defaults.formatter(d1),
             tsenddate: $.fn.datebox.defaults.formatter(d2),
             tsrate: parseInt(Math.random()*100)
         }]
-    })
+    });
+	editingId = 'N';
+	$('#tg').treegrid('select', editingId);
+	$('#tg').treegrid('beginEdit', editingId);    
 }
+
 function removeIt(){
     var node = $('#tg').treegrid('getSelected');
-    if (node){
-        $('#tg').treegrid('remove', node.tsno);
-    }
+    if (!node) {return;}
+    
+	$.ajax({
+		url : "taskDelete",
+		cache : false,
+		dataType : "json",
+		data : {tsno:node.tsno}
+	}).done(function(data){
+		$('#tg').treegrid('remove', node.tsno);
+	});
+	
+}
+// 사용자 선택
+function fn_searchUsers(row){
+    $.ajax({
+        url: "popupUsers",
+        type: "post"       
+    }).success(function(result){
+                $("#popupUsers").html(result);
+       			if (row.userno){
+       				set_Users(row.userno, row.usernm); 
+       			}
+        }           
+    );
+    $("#popupUsers").modal("show");
+}
+function deptTreeInUsersActivate(node) {
+    if (node==null || node.data.key==0) return;
+   
+    $.ajax({
+        url: "popupUsers4Users",
+        type:"post",
+        data: { deptno : node.data.key }       
+    }).success(function(result){
+                $("#userlist4Users").html(result);
+        }           
+    );
+}
+
+function fn_selectUsers(userno, usernm) {
+	var node = $('#tg').treegrid('getSelected');
+	
+	$('#tg').treegrid('update', {
+		id : node.tsno,
+		row : {userno : userno, usernm:usernm}
+	});
+	$('#tg').treegrid('endEdit', editingId);
+	$('#tg').treegrid('beginEdit', editingId);
+    $("#popupUsers").modal("hide");
 }
 </script>   
 </head>
@@ -136,7 +214,6 @@ function removeIt(){
                 </div>
                 <!-- /.col-lg-12 -->
             </div>
-            
             <!-- /.row -->
             <div class="row">
 				<div class="panel panel-default">
@@ -151,6 +228,17 @@ function removeIt(){
                 <button class="btn btn-outline btn-primary" onclick="fn_moveToURL('projectDelete?prno=<c:out value="${projectInfo.prno}"/>', '<s:message code="common.btnDelete"/>')" ><s:message code="common.btnDelete"/></button>
                 <button class="btn btn-outline btn-primary" onclick="fn_moveToURL('projectForm?prno=<c:out value="${projectInfo.prno}"/>')" ><s:message code="common.btnUpdate"/></button>
             </div>
+            <p>&nbsp;</p>
+            <div class="row">
+            	<div class="col-lg-5">
+		            <ul class="nav nav-pills">
+	                     <li class="active"><a href='#'><i class="fa fa-tasks fa-fw"></i>작업</a></li>
+	                     <li><a href="taskCalendar?prno=<c:out value="${prno}" />"><i class="fa fa-calendar  fa-fw"></i>일정</a></li>
+	                     <li><a href="taskWorker?prno=<c:out value="${prno}" />"><i class="fa fa-user fa-fw"></i>작업자</a></li>
+	                     <li><a href="taskMine?prno=<c:out value="${prno}" />">내것만</a></li>
+	                 </ul>
+                </div>
+            </div>             
             <!-- /.row -->
             <div class="row">
 			    <div style="margin:20px 0;">
@@ -175,7 +263,7 @@ function removeIt(){
 			        <thead>
 			            <tr>
 			                <th data-options="field:'tstitle',width:180,editor:'text'">Task Name</th>
-			                <th data-options="field:'persons',width:60,align:'right',editor:'numberbox'">Persons</th>
+			                <th data-options="field:'usernm',width:60,align:'right'">Persons</th>
 			                <th data-options="field:'tsstartdate',width:80,editor:'datebox'">Begin Date</th>
 			                <th data-options="field:'tsenddate',width:80,editor:'datebox'">End Date</th>
 			                <th data-options="field:'tsrate',width:120,formatter:formatProgress,editor:'numberbox'">Progress</th>
@@ -190,6 +278,8 @@ function removeIt(){
 
     </div>
     <!-- /#wrapper -->
+    <div id="popupUsers" class="modal fade bs-example-modal-lg" tabindex="-1" role="dialog" 
+    aria-labelledby="myLargeModalLabel"></div>     
 </body>
 
 </html>
