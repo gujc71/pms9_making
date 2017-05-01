@@ -12,16 +12,6 @@
          ORDER BY TSNO 
     </select> 
 
-    <select id="selectTaskWorkerList" resultType="gu.project.TaskVO" parameterType="String">
-        SELECT PRNO, PTU.USERNO, PT.TSNO, TSPARENT, TSSORT, TSTITLE, TSSTARTDATE, TSENDDATE, TSRATE
-             , USERNM
-          FROM PRJ_TASK PT
-         INNER JOIN PRJ_TASKUSER PTU ON PTU.TSNO=PT.TSNO
-         INNER JOIN  COM_USER CU ON PTU.USERNO=CU.USERNO
-         WHERE PT.DELETEFLAG='N' AND PRNO=#{pjno}
-         ORDER BY PTU.USERNO, TSNO 
-    </select> 
-            
     <insert id="insertTask" parameterType="gu.project.TaskVO" useGeneratedKeys="true" keyProperty="tsno">
         INSERT INTO PRJ_TASK(PRNO, TSPARENT, TSSORT, TSTITLE,  TSSTARTDATE, TSENDDATE, TSRATE, DELETEFLAG)
         VALUES (#{prno}, #{tsparent}, #{tssort}, #{tstitle}, #{ tsstartdate}, #{tsenddate}, #{tsrate}, 'N')

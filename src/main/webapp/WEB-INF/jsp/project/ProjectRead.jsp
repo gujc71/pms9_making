@@ -232,10 +232,10 @@ function fn_selectUsers(userno, usernm) {
             <div class="row">
             	<div class="col-lg-5">
 		            <ul class="nav nav-pills">
-	                     <li class="active"><a href='#'><i class="fa fa-tasks fa-fw"></i>작업</a></li>
-	                     <li><a href="taskCalendar?prno=<c:out value="${prno}" />"><i class="fa fa-calendar  fa-fw"></i>일정</a></li>
-	                     <li><a href="taskWorker?prno=<c:out value="${prno}" />"><i class="fa fa-user fa-fw"></i>작업자</a></li>
-	                     <li><a href="taskMine?prno=<c:out value="${prno}" />">내것만</a></li>
+	                     <li class="active"><a href="ProjectRead?prno=<c:out value="${projectInfo.prno}"/>"><i class="fa fa-tasks fa-fw"></i>작업</a></li>
+	                     <li><a href="taskCalendar?prno=<c:out value="${projectInfo.prno}"/>"><i class="fa fa-calendar  fa-fw"></i>일정</a></li>
+	                     <li><a href="taskWorker?prno=<c:out value="${projectInfo.prno}"/>"><i class="fa fa-user fa-fw"></i>작업자</a></li>
+	                     <li><a href="taskMine?prno=<c:out value="${projectInfo.prno}"/>">내것만</a></li>
 	                 </ul>
                 </div>
             </div>             

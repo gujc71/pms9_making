@@ -115,4 +115,25 @@ public class ProjectCtr {
         return "redirect:/projectList";
     }
    
+    /**
+     * 일정 중심.
+     */
+    @RequestMapping(value = "/taskCalendar")
+    public String taskCalendar(HttpServletRequest request, ProjectVO projectVO, ModelMap modelMap) {
+        // 페이지 공통: alert
+        String userno = request.getSession().getAttribute("userno").toString();
+        
+        Integer alertcount = etcSvc.selectAlertCount(userno);
+        modelMap.addAttribute("alertcount", alertcount);
+        
+        ProjectVO projectInfo = projectSvc.selectProjectOne(projectVO);
+
+        List<?> listview  = taskSvc.selectTaskList(projectVO.getPrno());
+        
+        
+        modelMap.addAttribute("projectInfo", projectInfo);
+        modelMap.addAttribute("listview", listview);
+        
+        return "project/taskCalendar";
+    }    
 }
